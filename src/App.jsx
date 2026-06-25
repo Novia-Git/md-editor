@@ -1,9 +1,10 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import CodeMirror from '@uiw/react-codemirror'
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown'
 import { languages } from '@codemirror/language-data'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { useMarkdown } from './useMarkdown'
+import { validateFile, convertDocxToMarkdown, convertPdfToMarkdown } from './fileConverter'
 import './App.css'
 
 const DEFAULT_CONTENT = `# 歡迎使用 Markdown Editor
@@ -44,7 +45,41 @@ console.log(greet('World'))
 export default function App() {
   const [content, setContent] = useState(DEFAULT_CONTENT)
   const [layout, setLayout] = useState('split') // 'split' | 'editor' | 'preview'
+  const [isConverting, setIsConverting] = useState(false)
+  const [convertError, setConvertError] = useState('')
+  const fileInputRef = useRef(null)
   const html = useMarkdown(content)
+
+  const handleUploadClick = useCallback(() => {
+    fileInputRef.current?.click()
+  }, [])
+
+  const handleFileChange = useCallback(async (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+
+    setConvertError('')
+    try {
+      validateFile(file)
+    } catch (err) {
+      setConvertError(err.message)
+      return
+    }
+
+    setIsConverting(true)
+    try {
+      const ext = file.name.split('.').pop().toLowerCase()
+      const md = ext === 'pdf'
+        ? await convertPdfToMarkdown(file)
+        : await convertDocxToMarkdown(file)
+      setContent(md)
+    } catch (err) {
+      setConvertError(err.message)
+    } finally {
+      setIsConverting(false)
+    }
+  }, [])
 
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(content)
@@ -69,6 +104,21 @@ export default function App() {
       <header className="toolbar">
         <span className="logo">Markdown Editor</span>
         <div className="toolbar-actions">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.docx"
+            style={{ display: 'none' }}
+            onChange={handleFileChange}
+          />
+          <button
+            onClick={handleUploadClick}
+            disabled={isConverting}
+            className="upload"
+            title="上傳 .docx 或 .pdf 轉換為 Markdown（上限 10 MB / 20 頁）"
+          >
+            {isConverting ? 'Converting…' : 'Upload'}
+          </button>
           <div className="layout-toggle">
             <button
               className={layout === 'editor' ? 'active' : ''}
@@ -91,6 +141,13 @@ export default function App() {
           <button onClick={handleClear} className="danger" title="清空">Clear</button>
         </div>
       </header>
+
+      {convertError && (
+        <div className="convert-error">
+          <span>{convertError}</span>
+          <button onClick={() => setConvertError('')} className="error-close">✕</button>
+        </div>
+      )}
 
       <main className={`workspace layout-${layout}`}>
         {layout !== 'preview' && (

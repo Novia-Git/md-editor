@@ -79,6 +79,45 @@
   color: #1e1e2e;
 }
 
+.toolbar-actions > button.upload {
+  background: #1e3a5f;
+  border-color: #89b4fa;
+  color: #89b4fa;
+}
+
+.toolbar-actions > button.upload:hover:not(:disabled) {
+  background: #89b4fa;
+  color: #1e1e2e;
+}
+
+.toolbar-actions > button.upload:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Convert error banner ── */
+.convert-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 16px;
+  background: #3b1219;
+  border-bottom: 1px solid #f38ba8;
+  color: #f38ba8;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.error-close {
+  background: none;
+  border: none;
+  color: #f38ba8;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 4px;
+  line-height: 1;
+}
+
 /* ── Workspace ── */
 .workspace {
   display: flex;
